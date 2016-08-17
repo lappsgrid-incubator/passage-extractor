@@ -38,7 +38,8 @@
             "producer" : "org.anc.lapps.chunk.PassageExtractor",
             "type" : "Window"
           }
-        }
+        },
+        "keyterms" : [ "England", "monarch", "Elizabeth" ]
       },
       "annotations" : [ {
         "id" : "window-1",

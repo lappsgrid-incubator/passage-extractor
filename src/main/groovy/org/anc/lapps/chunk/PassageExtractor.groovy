@@ -104,6 +104,7 @@ class PassageExtractor implements WebService {
         //Container resultContainer = new Container()
         View resultView = container.newView()
         resultView.addContains(WINDOW, PassageExtractor.class.name, WINDOW)
+        resultView.metadata.keyterms = keywords
 
         // Get the last view that contains the annotation type and iterate over each annotation
         // and find each span that contains the keyword.

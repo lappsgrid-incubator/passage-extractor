@@ -29,11 +29,12 @@ class ScoringTests {
         List<View> views = container.findViewsThatContain('Window')
         assertEquals(1, views.size())
 
-        Window document = new Window(0, container.text.length(), container.text)
-
         View view = views[-1]
         List<Annotation> annotations = view.annotations
         assertEquals(2, annotations.size())
+
+//        List<String> keyterms = view.metadata.keyterms
+        Window document = new Window(0, container.text.length(), container.text, view.metadata.keyterms ?: [])
 
         List<Window> windows = []
         annotations.each { Annotation a ->
