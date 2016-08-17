@@ -1,5 +1,7 @@
 package org.anc.lapps.chunk.scorer
 
+import org.anc.lapps.chunk.WindowsExtractor.Window
+
 /**
  * Created by krim on 8/16/2016.
  */
@@ -28,11 +30,10 @@ class CompositeScorer implements WindowScorerI {
     }
 
     @Override
-    public double scoreWindow(int begin, int end, int matchesFound,
-                              int totalMatches, int keytermsFound, int totalKeyterms, int textSize) {
+    public double scoreWindow(Window window, Window document) {
         double result = 0.0d;
         for ( WindowScorerI scorer : scorers ) {
-            double score = scorer.scoreWindow( begin , end , matchesFound , totalMatches , keytermsFound , totalKeyterms , textSize );
+            double score = scorer.scoreWindow(window, document);
             if ( score > 1.0d || score < 0.0d )
                 System.out.println( scorer.getClass().getSimpleName() + " OUT OF BOUNDS: " + score );
             result += score;
@@ -48,10 +49,8 @@ class CompositeScorer implements WindowScorerI {
         }
 
         @Override
-        public double scoreWindow(int begin, int end, int matchesFound,
-                                  int totalMatches, int keytermsFound, int totalKeyterms,
-                                  int textSize) {
-            return lambda * scorer.scoreWindow( begin , end , matchesFound , totalMatches , keytermsFound , totalKeyterms , textSize );
+        public double scoreWindow(Window window, Window document) {
+            return lambda * scorer.scoreWindow(window, document);
         }
 
     }
