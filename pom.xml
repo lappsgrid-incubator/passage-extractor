@@ -11,7 +11,7 @@
     <groupId>org.anc.lapps</groupId>
     <artifactId>passage-extractor</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <properties>
         <java.version>1.8</java.version>
     </properties>
