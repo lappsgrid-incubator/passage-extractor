@@ -1,6 +1,6 @@
 package org.anc.lapps.chunk.scorer
 
-import org.anc.lapps.chunk.WindowsExtractor.Window
+import org.anc.lapps.chunk.window.Window
 
 /**
  * Created by krim on 8/14/2016.

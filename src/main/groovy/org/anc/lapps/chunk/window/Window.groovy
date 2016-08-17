@@ -1,4 +1,4 @@
-package org.anc.lapps.chunk.WindowsExtractor
+package org.anc.lapps.chunk.window
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
