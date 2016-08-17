@@ -22,7 +22,7 @@ class PassageExtractor implements WebService {
     static final String NO_PARAMETERS = "No input parameter map found."
     static final String NO_PASSAGE_ANNOTAION = "No passage annotation type was provided."
     static final String NO_ANNOTATIONS = "No view contains the selected annotation type."
-    static final String NO_KEYWORD = "No keyword provided."
+    static final String NO_KEYWORD_FILE = "Keyword file not found."
 
     String metadata
 
@@ -69,11 +69,17 @@ class PassageExtractor implements WebService {
         if (annotationType == null) {
             return error(NO_PASSAGE_ANNOTAION)
         }
-        String keyword = data.parameters.keyword
-        if (keyword == null) {
+
+        String keywordFilename = data.parameters.keyword
+        if (keywordFilename == null) {
             return error(NO_KEYWORD)
         }
+        File keywordFile = new File(keywordFilename)
+        if (!keywordFile.exists()) {
+            return error(NO_KEYWORD_FILE)
+        }
 
+        List<String> keywords = keywordFile.readLines()
         Container container = new Container(data.payload)
         List<View> views = container.findViewsThatContain(annotationType)
         if (views == null || views.size() == 0) {
@@ -102,7 +108,7 @@ class PassageExtractor implements WebService {
         View view = views[-1]
         view.annotations.each { Annotation a ->
             String covered = text.substring((int)a.start, (int)a.end)
-            if (covered.contains(keyword)) {
+            if (contains(covered, keywords)) {
                 resultView.newAnnotation("kw=${++id}", annotationType, offset, offset + covered.length())
                 buffer.append(covered)
                 buffer.append('\n')
@@ -113,6 +119,14 @@ class PassageExtractor implements WebService {
         return new Data(Uri.LIF, resultContainer).asPrettyJson()
     }
 
+    boolean contains(String line, List<String> keyterms) {
+        for (String keyterm : keyterms) {
+            if (line.contains(keyterm)) {
+                return true
+            }
+        }
+        return false
+    }
     /**
      * Returns a JSON string containing metadata describing the service. The
      * JSON <em>must</em> conform to the json-schema at

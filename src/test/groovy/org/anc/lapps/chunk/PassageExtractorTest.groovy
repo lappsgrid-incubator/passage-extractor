@@ -135,13 +135,21 @@ class PassageExtractorTest {
 
     @Test
     void testChunkExtractor() {
+        File testFile = File.createTempFile('passage_extractor', '.txt')
+        testFile.deleteOnExit()
+        testFile.withWriter {
+            println 'Barak Obama'
+        }
         Data original = makeData()
         original.parameters = [
-                keyword: 'Barak Obama',
+                keyword: testFile.path,
                 annotation: Uri.SENTENCE
         ]
         Data data = execute(original)
-        assertEquals(Uri.LIF, data.discriminator)
+//        assertEquals(Uri.LIF, data.discriminator)
+        if (Uri.LIF != data.discriminator) {
+            fail data.payload
+        }
         container = new Container(data.payload)
         List<View> views = container.findViewsThatContain(Uri.SENTENCE)
         assertNotNull(views)
