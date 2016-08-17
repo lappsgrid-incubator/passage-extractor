@@ -7,7 +7,7 @@ import org.anc.lapps.chunk.window.Window
  */
 class CompositeScorer implements WindowScorerI {
 
-    private List<WindowScorerI> scorers;
+    private List<WindowScorerI> scorers = [];
 
     /**
      * this is default, uniform distribution lambda
