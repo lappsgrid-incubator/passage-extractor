@@ -109,7 +109,7 @@ class PassageExtractorTest {
         data.parameters = [ annotation: Uri.TOKEN ]
         data = execute(data)
         hasError(data)
-        assertEquals(PassageExtractor.NO_KEYWORD, data.payload.toString())
+        assertEquals(PassageExtractor.NO_KEYWORD_FILE, data.payload.toString())
     }
 
     @Test
@@ -137,50 +137,84 @@ class PassageExtractorTest {
     void testChunkExtractor() {
         File testFile = File.createTempFile('passage_extractor', '.txt')
         testFile.deleteOnExit()
-        testFile.withWriter {
-            println 'Barak Obama'
-        }
+        testFile.text = 'Barak Obama\n'
+
         Data original = makeData()
         original.parameters = [
                 keyword: testFile.path,
                 annotation: Uri.SENTENCE
         ]
+        println makeData().asPrettyJson()
         Data data = execute(original)
 //        assertEquals(Uri.LIF, data.discriminator)
         if (Uri.LIF != data.discriminator) {
             fail data.payload
         }
+        println data.asPrettyJson()
         container = new Container(data.payload)
-        List<View> views = container.findViewsThatContain(Uri.SENTENCE)
+        List<View> views = container.findViewsThatContain(PassageExtractor.WINDOW)
         assertNotNull(views)
         assertEquals(1, views.size())
-        List<Annotation> annotations = views[0].annotations
+        List<Annotation> annotations = views[-1].annotations
         assertNotNull(annotations)
         assertEquals(1, annotations.size())
         Annotation annotation = annotations[0]
-        assertEquals(Uri.SENTENCE, annotation.atType)
+        assertEquals(PassageExtractor.WINDOW, annotation.atType)
         String text = container.text.substring((int)annotation.start, (int)annotation.end)
         assertEquals(S1, text)
 
-        original.parameters.keyword = 'London'
+        //original.parameters.keyword = 'London'
+        testFile.text = 'London\n'
         data = execute(original)
+
+//        println json
+//        data = Serializer.parse(json, Data)
+//
         container = new Container(data.payload)
-        views = container.findViewsThatContain(Uri.SENTENCE)
+        views = container.findViewsThatContain(PassageExtractor.WINDOW)
         assertEquals(1, views.size())
         annotations = views[0].annotations
         assertEquals(1, annotations.size())
         Annotation a = annotations[0]
         assertEquals(S2, getText(a))
 
-        original.parameters.keyword = 'England'
+//        original.parameters.keywordFile = 'England'
+        testFile.text = 'England\nmonarch\nElizabeth\n'
         data = execute(original)
         container = new Container(data.payload)
-        views = container.findViewsThatContain(Uri.SENTENCE)
+        views = container.findViewsThatContain(PassageExtractor.WINDOW)
         assertEquals(1, views.size())
         annotations = views[0].annotations
         assertEquals(2, annotations.size())
         assertEquals(S2, getText((Annotation)annotations[0]))
         assertEquals(S3, getText((Annotation)annotations[1]))
+    }
+
+    @Test
+    void testMultiMatch() {
+        File testFile = File.createTempFile('passage_extractor', '.txt')
+        testFile.deleteOnExit()
+        testFile.text = 'England\nmonarch\nElizabeth\n'
+
+        Data original = makeData()
+        original.parameters = [
+                keyword: testFile.path,
+                annotation: Uri.SENTENCE
+        ]
+        Data data = execute(original)
+        if (Uri.LIF != data.discriminator) {
+            fail data.payload
+        }
+        data = execute(original)
+        container = new Container(data.payload)
+        List<View> views = container.findViewsThatContain(PassageExtractor.WINDOW)
+        assertEquals(1, views.size())
+        List<Annotation> annotations = views[0].annotations
+        assertEquals(2, annotations.size())
+        assertEquals(S2, getText((Annotation)annotations[0]))
+        assertEquals(S3, getText((Annotation)annotations[1]))
+        println data.asPrettyJson()
+
     }
 
     String getText(Annotation annotation) {
@@ -203,7 +237,7 @@ class PassageExtractorTest {
         int offset = 0
         int id = 0
         [S1, S2, S3].each { String sentence ->
-            view.newAnnotation("s=${++id}", Uri.SENTENCE, offset, offset + sentence.length())
+            view.newAnnotation("s${++id}", Uri.SENTENCE, offset, offset + sentence.length())
             buffer.append(sentence)
             buffer.append('\n')
             offset = buffer.length()

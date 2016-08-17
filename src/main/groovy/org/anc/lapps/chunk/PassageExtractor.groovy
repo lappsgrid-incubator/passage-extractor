@@ -17,11 +17,14 @@ import static org.lappsgrid.discriminator.Discriminators.Uri
  */
 class PassageExtractor implements WebService {
 
+    static final String WINDOW = "Window"
+
     static final String NO_INPUT = "No input was provided."
     static final String INVALID_DISCRIMINATOR = "Invalid discriminator. Expected a LIF document but found "
     static final String NO_PARAMETERS = "No input parameter map found."
     static final String NO_PASSAGE_ANNOTAION = "No passage annotation type was provided."
     static final String NO_ANNOTATIONS = "No view contains the selected annotation type."
+    static final String NO_KEYWORD_PARAMETER = "Missing Parameter: no keywords file specified."
     static final String NO_KEYWORD_FILE = "Keyword file not found."
 
     String metadata
@@ -72,7 +75,7 @@ class PassageExtractor implements WebService {
 
         String keywordFilename = data.parameters.keyword
         if (keywordFilename == null) {
-            return error(NO_KEYWORD)
+            return error(NO_KEYWORD_PARAMETER)
         }
         File keywordFile = new File(keywordFilename)
         if (!keywordFile.exists()) {
@@ -84,39 +87,58 @@ class PassageExtractor implements WebService {
         List<View> views = container.findViewsThatContain(annotationType)
         if (views == null || views.size() == 0) {
             Container result = new Container()
-            result.text = ''
+            result.text = container.text
             result.metadata = container.metadata
             View view = result.newView()
             view.addContains(annotationType, PassageExtractor.class.name, annotationType)
             return new Data(Uri.LIF, result).asJson()
-//            return error(NO_ANNOTATIONS)
         }
 
         String text = container.text
 
         // Buffer used to assemble the output (result) text.
-        StringBuilder buffer = new StringBuilder()
+        //StringBuilder buffer = new StringBuilder()
         int offset = 0
         int id = 0
 
-        Container resultContainer = new Container()
-        View resultView = resultContainer.newView()
-        resultView.addContains(annotationType, PassageExtractor.class.name, annotationType)
+        //Container resultContainer = new Container()
+        View resultView = container.newView()
+        resultView.addContains(WINDOW, PassageExtractor.class.name, WINDOW)
 
-        // Get the last view and iterate over each annotation and find each
-        // span that contains the keyword.
+        // Get the last view that contains the annotation type and iterate over each annotation
+        // and find each span that contains the keyword.
         View view = views[-1]
         view.annotations.each { Annotation a ->
-            String covered = text.substring((int)a.start, (int)a.end)
-            if (contains(covered, keywords)) {
-                resultView.newAnnotation("kw=${++id}", annotationType, offset, offset + covered.length())
-                buffer.append(covered)
-                buffer.append('\n')
-                offset = buffer.length()
+            if (a.atType == annotationType) {
+                String covered = text.substring((int)a.start, (int)a.end)
+                List<String> matches = []
+                keywords.each { String keyword ->
+                    int end = -1
+                    int start = covered.indexOf(keyword)
+                    while (start > end) {
+                        //resultView.newAnnotation("key${++id}", annotationType, offset, offset+keyword.length())
+                        end = start + keyword.length()
+                        matches.add(new Passage(term:keyword, start:start, end:end))
+                        start = covered.indexOf(keyword, end)
+                    }
+                }
+                if (matches.size() > 0) {
+                    Annotation window = resultView.newAnnotation("window-${++id}", WINDOW, a.start, a.end)
+                    window.features.matches = matches
+                    window.features.text = covered
+                    window.features.id = a.id
+                }
+//                if (contains(covered, keywords)) {
+//                    resultView.newAnnotation("kw=${++id}", annotationType, offset, offset + covered.length())
+//                    buffer.append(covered)
+//                    buffer.append('\n')
+//                    offset = buffer.length()
+//                }
             }
         }
-        resultContainer.text = buffer.toString()
-        return new Data(Uri.LIF, resultContainer).asPrettyJson()
+//        resultContainer.text = buffer.toString()
+//        return new Data(Uri.LIF, resultContainer).asPrettyJson()
+        return new Data(Uri.LIF, container).asPrettyJson()
     }
 
     boolean contains(String line, List<String> keyterms) {
