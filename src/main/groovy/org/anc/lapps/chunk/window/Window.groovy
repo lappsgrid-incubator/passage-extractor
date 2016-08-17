@@ -6,18 +6,50 @@ import java.util.regex.Pattern
 /**
  * Created by krim on 8/16/2016.
  * Class representing a "windows" as a candidate for a meaningful passage
+ * Need to be specified with 'start', 'end', and 'text' values
+ * , as well as keytermMatchLimit, only if necessary
  */
 class Window {
 
-    int start
-    int end
-    int keytermMatchLimit = Double.POSITIVE_INFINITY
-    def keytermMatches = [:]
-    def keytermContains = [:]
+    int start // inclusive
+    int end // exclusive
+    int keytermMatchLimit
+    def keytermMatches
+    def keytermContains
     String text
 
+    def init() {
+        this.keytermMatchLimit = Double.POSITIVE_INFINITY
+        this.keytermMatches = [:]
+        this.keytermContains = [:]
+    }
+
+    Window(start, end, text) {
+        init()
+        this.start = start
+        this.end = end
+        this.text = text
+    }
+
+    Window(int start, int end, String text, int keytermMatchLimit) {
+        this(start, end, text)
+        this.keytermMatchLimit = keytermMatchLimit
+    }
+
+    Window(int start, int end, String text, List<String> keyterms) {
+        this(start, end, text)
+        this.matches(keyterms)
+        this.contains(keyterms)
+    }
+
+    Window(int start, int end, String text, List<String> keyterms, int keytermMatchLimit) {
+        this(start, end, text, keytermMatchLimit)
+        this.matches(keyterms)
+        this.contains(keyterms)
+    }
+
     def length() {
-        end - start
+        end - start + 1
     }
 
     def matches(String keyterm) {
