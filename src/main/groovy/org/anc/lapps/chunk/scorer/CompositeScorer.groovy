@@ -7,7 +7,41 @@ import org.anc.lapps.chunk.window.Window
  */
 class CompositeScorer implements WindowScorerI {
 
-    private List<WindowScorerI> scorers = [];
+    private List<WindowScorerI> scorers;
+    def nameSpace = ['termrecall' : TermRecallScorer.class,
+                     'matchrecall' : MatchRecallScorer.class,
+                     'brevity' : BrevityScorer.class,
+                     'offset' : OffsetScorer.class]
+
+    CompositeScorer() {
+        scorers = []
+    }
+
+    @Override
+    String toString() {
+        return scorers.toString()
+    }
+/**
+     * initiates an instance with specific configuration for each scorers
+     * @param configuration - needs to be formatted
+     *  "scorer1Name : weight, scorer2Name : weight, ..."
+     *  name should be one of ['termrecall', 'matchrecall', 'brevity', 'offset'] all lower cases
+     *  sum of weight should be 1
+     *  (does not have to be using all 4 scorers)
+     */
+    CompositeScorer(String configuration) {
+        this()
+        configuration.split("\\s*,\\s*").each {
+            scorerString ->
+                // TODO: 2016-08-17 18:51:40EDT add error handling for unacceptable names
+                def name = scorerString.split("\\s*:\\s*")[0]
+                def weightString = scorerString.split("\\s*:\\s*")[1]
+                WindowScorerI scorer = nameSpace[name].newInstance()
+                Double weight = Double.parseDouble(weightString)
+                this.add(scorer, weight)
+        }
+
+    }
 
     /**
      * this is default, uniform distribution lambda
@@ -26,7 +60,7 @@ class CompositeScorer implements WindowScorerI {
     }
 
     public void add(WindowScorerI scorer, Double lambda ) {
-        scorers.add(new WeightedScorer( scorer , lambda));
+        scorers.add(new WeightedScorer(scorer , lambda));
     }
 
     @Override
@@ -53,5 +87,9 @@ class CompositeScorer implements WindowScorerI {
             return lambda * scorer.scoreWindow(window, document);
         }
 
+        @Override
+        String toString() {
+            return this.scorer.class.getName() + " : " + this.lambda
+        }
     }
 }

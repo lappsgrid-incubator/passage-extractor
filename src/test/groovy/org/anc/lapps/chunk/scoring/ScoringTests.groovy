@@ -20,11 +20,10 @@ import static org.lappsgrid.discriminator.Discriminators.Uri
  */
 class ScoringTests {
 
-    void score(WindowScorerI scorer) {
-        URL url = ScoringTests.getResource('/test1.lif')
-        assertNotNull('Resource not found.', url)
-        Data data = Serializer.parse(url.text, Data)
+    Data score(String name, WindowScorerI scorer, Data data) {
         assertEquals(Uri.LIF, data.discriminator)
+        assertNotNull(scorer.class.name)
+        println scorer.class.name
         Container container = new Container(data.payload)
         List<View> views = container.findViewsThatContain('Window')
         assertEquals(1, views.size())
@@ -33,38 +32,43 @@ class ScoringTests {
         List<Annotation> annotations = view.annotations
         assertEquals(2, annotations.size())
 
-//        List<String> keyterms = view.metadata.keyterms
         Window document = new Window(0, container.text.length(), container.text, view.metadata.keyterms ?: [])
 
-        List<Window> windows = []
+        Map scores = [:]
         annotations.each { Annotation a ->
             List terms = a.features.matches.collect { it.term }
-            windows.add(new Window((int)a.start, (int)a.end, a.features.text, terms))
+            Window window = new Window((int)a.start, (int)a.end, a.features.text, terms)
+            scores[name] = scorer.scoreWindow(window, document)
         }
+        container.views[-1].metadata.scores = scores
+        return new Data(Uri.LIF, container)
+    }
 
-//        BrevityScorer scorer = new BrevityScorer()
-        windows.each { Window window ->
-            println scorer.scoreWindow(window, document)
-        }
+    void score(String name, WindowScorerI scorer) {
+        URL url = ScoringTests.getResource('/test1.lif')
+        assertNotNull('Resource not found.', url)
+        Data data = Serializer.parse(url.text, Data)
+        data = score(name, scorer, data)
+        println data.asPrettyJson()
     }
 
     @Test
     void testBrevityScorer() {
-        score(new BrevityScorer())
+        score('brevity', new BrevityScorer())
     }
 
     @Test
     void testOffsetScorer() {
-        score(new OffsetScorer())
+        score('offset', new OffsetScorer())
     }
 
     @Test
     void testMatchRecallScorer() {
-        score(new MatchRecallScorer())
+        score('match', new MatchRecallScorer())
     }
 
     @Test
     void testTermRecallScorer() {
-        score(new MatchRecallScorer())
+        score('term', new MatchRecallScorer())
     }
 }
