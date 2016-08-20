@@ -7,7 +7,7 @@ import org.anc.lapps.chunk.window.Window
  */
 class CompositeScorer implements WindowScorerI {
 
-    private List<WindowScorerI> scorers;
+    private List<WindowScorerI> scorers = [];
     def nameSpace = ['termrecall' : TermRecallScorer.class,
                      'matchrecall' : MatchRecallScorer.class,
                      'brevity' : BrevityScorer.class,
