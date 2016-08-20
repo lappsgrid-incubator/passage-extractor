@@ -1,6 +1,5 @@
 package org.anc.lapps.chunk
 
-import com.fasterxml.jackson.databind.JsonMappingException
 import org.lappsgrid.api.WebService
 import org.lappsgrid.metadata.ServiceMetadata
 import org.lappsgrid.metadata.ServiceMetadataBuilder
