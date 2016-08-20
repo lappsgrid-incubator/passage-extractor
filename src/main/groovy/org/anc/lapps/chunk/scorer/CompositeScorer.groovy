@@ -72,6 +72,7 @@ class CompositeScorer implements WindowScorerI {
                 System.out.println( scorer.getClass().getSimpleName() + " OUT OF BOUNDS: " + score );
             result += score;
         }
+        window.score = result
         return result;
     }
     private class WeightedScorer implements WindowScorerI {

@@ -9,6 +9,8 @@ class BrevityScorer implements WindowScorerI {
     @Override
     double scoreWindow(Window window, Window document) {
         int windowSize = window.length()
-        return 1 - ((double) windowSize / (double) document.length());
+        double score = 1 - ((double) windowSize / (double) document.length());
+        window.score = score
+        return score
     }
 }

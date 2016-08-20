@@ -8,6 +8,8 @@ import org.anc.lapps.chunk.window.Window
 class TermRecallScorer implements WindowScorerI {
     @Override
     double scoreWindow(Window window, Window document) {
-        return (double) window.totalContains() / (double) document.totalContains()
+        double score = (double) window.totalContains() / (double) document.totalContains()
+        window.score = score
+        return score
     }
 }

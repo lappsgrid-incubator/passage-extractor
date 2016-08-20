@@ -8,6 +8,8 @@ import org.anc.lapps.chunk.window.Window
 class MatchRecallScorer implements WindowScorerI {
     @Override
     double scoreWindow(Window window, Window document) {
-        return (double) window.totalMatches() / (double) document.totalMatches()
+        double score = (double) window.totalMatches() / (double) document.totalMatches()
+        window.score = score
+        return score
     }
 }

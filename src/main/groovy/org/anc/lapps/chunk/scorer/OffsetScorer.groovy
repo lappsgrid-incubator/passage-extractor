@@ -8,7 +8,9 @@ import org.anc.lapps.chunk.window.Window
 class OffsetScorer implements WindowScorerI {
     @Override
     double scoreWindow(Window window, Window document) {
-        return ( (double) document.length() - (double) window.start ) /
+        double score =  ( (double) document.length() - (double) window.start ) /
                 (double) document.length()
+        window.score = score
+        return score
     }
 }
