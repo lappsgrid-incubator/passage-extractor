@@ -6,6 +6,8 @@ import org.lappsgrid.serialization.lif.View
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
+import static org.anc.lapps.chunk.PassageExtractor.WINDOW
+
 /**
  * Created by krim on 8/16/2016.
  * Class representing a "windows" as a candidate for a meaningful passage
@@ -15,19 +17,20 @@ import java.util.regex.Pattern
 class Window {
 
     int start // inclusive
-    int end // exclusive
+    int end   // exclusive
     int keytermMatchLimit
     def keytermMatches
     def keytermContains
     def passages
     def originalAnnotationId
-    def score
+    double score
     String text
 
     def init() {
         this.keytermMatchLimit = Double.POSITIVE_INFINITY
         this.keytermMatches = [:].withDefault {0}
         this.keytermContains = [:]
+        this.passages = []
     }
 
     Window(start, end, text, originalId) {
@@ -65,6 +68,7 @@ class Window {
             def matchesFound = 0
             Matcher m = Pattern.compile(keyterm).matcher(text);
             while (m.find() && matchesFound < keytermMatchLimit) {
+                this.passages.add(new Passage(term: keyterm, start: m.start(), end: m.end()))
                 matchesFound++
             }
             keytermMatches[keyterm] = matchesFound
@@ -103,12 +107,13 @@ class Window {
         return totalContains
     }
 
-    Annotation toAnnotation(View parentView, String id) {
-        Annotation window = new Annotation(id, WINDOWS, start, end)
+    Annotation toAnnotation(String id) {
+        Annotation window = new Annotation(id, start, end)
+        window.atType = WINDOW
         window.features.matches = this.passages
         window.features.text = this.text
         window.features.id = this.originalAnnotationId
-        window.features.score = this.score
+        if (this.score != null && this.score >= 0) window.features.score = this.score
         return window
     }
 

@@ -1,11 +1,15 @@
 package org.anc.lapps.chunk
 
+import com.fasterxml.jackson.databind.JsonMappingException
+import org.anc.lapps.chunk.window.Window
+import org.anc.lapps.chunk.window.extraction.AbstractWindowExtraction
+import org.anc.lapps.chunk.window.extraction.AnnTypeBasedWindow
 import org.lappsgrid.api.WebService
+import org.lappsgrid.discriminator.Discriminators
 import org.lappsgrid.metadata.ServiceMetadata
 import org.lappsgrid.metadata.ServiceMetadataBuilder
 import org.lappsgrid.serialization.Data
 import org.lappsgrid.serialization.Serializer
-import org.lappsgrid.serialization.lif.Annotation
 import org.lappsgrid.serialization.lif.Container
 import org.lappsgrid.serialization.lif.View
 
@@ -47,6 +51,57 @@ class PassageExtractor implements WebService {
      */
     @Override
     String execute(String input) {
+
+        Data data = validateInputJson(input)
+
+        if (Uri.ERROR == data.discriminator) {
+            return data.asPrettyJson()
+        }
+
+        Map params = data.parameters
+        Data paramsValidation = validateParameters(params)
+        if (paramsValidation != null && paramsValidation.discriminator == Uri.ERROR) {
+            return paramsValidation.asPrettyJson()
+        }
+
+        File keytermFile = new File((String) params.keyword)
+        if (!keytermFile.exists()) {
+            return error(NO_KEYWORD_FILE).asPrettyJson()
+        }
+
+        List<String> keyterms = readKeyterms(keytermFile)
+        Container container = new Container(data.payload)
+
+        AbstractWindowExtraction extractor = new AnnTypeBasedWindow(params)
+        List<Window> candidateWindows = extractor.extract(container, keyterms)
+
+        if (candidateWindows == null || candidateWindows.size() == 0) {
+            Container result = new Container()
+            result.text = container.text
+            result.metadata = container.metadata
+            View view = result.newView()
+            String annotationType = params.annotation
+            view.addContains(annotationType, PassageExtractor.class.name, annotationType)
+            return new Data(Discriminators.Uri.LIF, result).asJson()
+        }
+
+        View resultView = container.newView()
+        resultView.addContains(WINDOW, PassageExtractor.class.name, WINDOW)
+        resultView.metadata.keyterms = keyterms
+        resultView.metadata.sizelimit = params.sizelimit ?: "unlimited"
+        resultView.metadata.numlimit = params.numlimit ?: "unlimited"
+        resultView.metadata.matchlimit = params.matchlimit ?: "unlimited"
+
+        int id = 0
+        candidateWindows.each {Window window ->
+            resultView.addAnnotation(window.toAnnotation("window-${++id}"))
+        }
+
+        return new Data(Uri.LIF, container).asPrettyJson()
+    }
+
+    Data validateInputJson(String input) {
+
         if (input == null) {
             return error(NO_INPUT)
         }
@@ -59,86 +114,34 @@ class PassageExtractor implements WebService {
         }
 
         if (Uri.ERROR == data.discriminator) {
-            return input
+            return data
         }
         if (Uri.LIF != data.discriminator && Uri.LAPPS != data.discriminator) {
             return error(INVALID_DISCRIMINATOR + data.discriminator)
         }
-        if (data.parameters == null) {
+
+        return data
+    }
+
+    Data validateParameters(Map params) {
+
+        if (params == null) {
             return error(NO_PARAMETERS)
         }
-        String annotationType = data.parameters.annotation
+        String annotationType = params.annotation
         if (annotationType == null) {
             return error(NO_PASSAGE_ANNOTAION)
         }
 
-        String keywordFilename = data.parameters.keyword
+        String keywordFilename = params.keyword
         if (keywordFilename == null) {
             return error(NO_KEYWORD_PARAMETER)
         }
-        File keywordFile = new File(keywordFilename)
-        if (!keywordFile.exists()) {
-            return error(NO_KEYWORD_FILE)
-        }
 
-        List<String> keywords = keywordFile.readLines()
-        Container container = new Container(data.payload)
-        List<View> views = container.findViewsThatContain(annotationType)
-        if (views == null || views.size() == 0) {
-            Container result = new Container()
-            result.text = container.text
-            result.metadata = container.metadata
-            View view = result.newView()
-            view.addContains(annotationType, PassageExtractor.class.name, annotationType)
-            return new Data(Uri.LIF, result).asJson()
-        }
+    }
 
-        String text = container.text
-
-        // Buffer used to assemble the output (result) text.
-        //StringBuilder buffer = new StringBuilder()
-        int offset = 0
-        int id = 0
-
-        //Container resultContainer = new Container()
-        View resultView = container.newView()
-        resultView.addContains(WINDOW, PassageExtractor.class.name, WINDOW)
-        resultView.metadata.keyterms = keywords
-
-        // Get the last view that contains the annotation type and iterate over each annotation
-        // and find each span that contains the keyword.
-        View view = views[-1]
-        view.annotations.each { Annotation a ->
-            if (a.atType == annotationType) {
-                String covered = text.substring((int)a.start, (int)a.end)
-                List<String> matches = []
-                keywords.each { String keyword ->
-                    int end = -1
-                    int start = covered.indexOf(keyword)
-                    while (start > end) {
-                        //resultView.newAnnotation("key${++id}", annotationType, offset, offset+keyword.length())
-                        end = start + keyword.length()
-                        matches.add(new Passage(term:keyword, start:start, end:end))
-                        start = covered.indexOf(keyword, end)
-                    }
-                }
-                if (matches.size() > 0) {
-                    Annotation window = resultView.newAnnotation("window-${++id}", WINDOW, a.start, a.end)
-                    window.features.matches = matches
-                    window.features.text = covered
-                    window.features.id = a.id
-                }
-//                if (contains(covered, keywords)) {
-//                    resultView.newAnnotation("kw=${++id}", annotationType, offset, offset + covered.length())
-//                    buffer.append(covered)
-//                    buffer.append('\n')
-//                    offset = buffer.length()
-//                }
-            }
-        }
-//        resultContainer.text = buffer.toString()
-//        return new Data(Uri.LIF, resultContainer).asPrettyJson()
-        return new Data(Uri.LIF, container).asPrettyJson()
+    List<String> readKeyterms(File keytermFile) {
+        return keytermFile.readLines()
     }
 
     boolean contains(String line, List<String> keyterms) {
@@ -178,8 +181,8 @@ class PassageExtractor implements WebService {
         return metadata
     }
 
-    private String error(String message) {
-        return new Data(Uri.ERROR, message).asPrettyJson()
+    private Data error(String message) {
+        return new Data(Uri.ERROR, message)
     }
 
 
