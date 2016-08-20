@@ -17,7 +17,6 @@ class Window {
     int start // inclusive
     int end // exclusive
     int keytermMatchLimit
-    int matchesFound
     def keytermMatches
     def keytermContains
     def passages
@@ -29,7 +28,6 @@ class Window {
         this.keytermMatchLimit = Double.POSITIVE_INFINITY
         this.keytermMatches = [:].withDefault {0}
         this.keytermContains = [:]
-        this.matchesFound = 0
     }
 
     Window(start, end, text, originalId) {
@@ -62,18 +60,24 @@ class Window {
         end - start + 1
     }
 
-    def matches(List<String> keyterms) {
-        String pat = "("
-        keyterms.each { keyterm -> pat += keyterm }
-        pat += ")"
-
-        Matcher m = Pattern.compile(pat).matcher(text);
-        while (m.find() && matchesFound < keytermMatchLimit) {
-            String matchedKeyterm = m.group()
-            this.passages.add(new Passage(term: matchedKeyterm, start: m.start(), end: m.end()))
-            keytermMatches[matchedKeyterm]++
-            matchesFound++
+    def matches(String keyterm) {
+        if (!keytermMatches.keySet().contains(keyterm)) {
+            def matchesFound = 0
+            Matcher m = Pattern.compile(keyterm).matcher(text);
+            while (m.find() && matchesFound < keytermMatchLimit) {
+                matchesFound++
+            }
+            keytermMatches[keyterm] = matchesFound
         }
+        return keytermMatches[keyterm]
+    }
+
+    def matches(List<String> keyterms) {
+        def totalMatches = 0
+        keyterms.each {
+            keyterm -> totalMatches += matches(keyterm)
+        }
+        return totalMatches
     }
 
     def totalMatches() {
