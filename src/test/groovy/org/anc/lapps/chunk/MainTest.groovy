@@ -27,7 +27,7 @@ class MainTest {
     @Test
     void testVersion() {
         String expected = "Lappsgrid Passage Extractor v${Version.getVersion()}"
-        PassageExtractor.main(['-v'] as String[])
+        WindowExtractorService.main(['-v'] as String[])
         String output = stream.toString()
         assertTrue output.contains(expected)
         assertTrue output.contains('Copyright')
@@ -37,7 +37,7 @@ class MainTest {
 
     @Test
     void testHelp() {
-        PassageExtractor.main(['-h'] as String[])
+        WindowExtractorService.main(['-h'] as String[])
         String out = stream.toString()
         println out
     }

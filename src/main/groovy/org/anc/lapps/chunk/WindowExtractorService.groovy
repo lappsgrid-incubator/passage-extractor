@@ -18,7 +18,7 @@ import static org.lappsgrid.discriminator.Discriminators.Uri
 /**
  * @author Keith Suderman
  */
-class PassageExtractor implements WebService {
+class WindowExtractorService implements WebService {
 
     static final String WINDOW = "Window"
 
@@ -81,12 +81,12 @@ class PassageExtractor implements WebService {
             result.metadata = container.metadata
             View view = result.newView()
             String annotationType = params.annotation
-            view.addContains(annotationType, PassageExtractor.class.name, annotationType)
+            view.addContains(annotationType, WindowExtractorService.class.name, annotationType)
             return new Data(Discriminators.Uri.LIF, result).asJson()
         }
 
         View resultView = container.newView()
-        resultView.addContains(WINDOW, PassageExtractor.class.name, WINDOW)
+        resultView.addContains(WINDOW, WindowExtractorService.class.name, WINDOW)
         resultView.metadata.keyterms = keyterms
         resultView.metadata.sizelimit = params.sizelimit ?: "unlimited"
         resultView.metadata.numlimit = params.numlimit ?: "unlimited"
@@ -168,7 +168,7 @@ class PassageExtractor implements WebService {
                 .allow(Uri.ANY)
                 .license(Uri.APACHE2)
                 .vendor("http://www.anc.org")
-                .name(PassageExtractor.class.name)
+                .name(WindowExtractorService.class.name)
                 .version(Version.getVersion())
                 .description('Extracts all segments (chunks) that contain the given string(s).')
                 .requireEncoding('UTF-8')
@@ -269,7 +269,7 @@ class PassageExtractor implements WebService {
         container.text = inputFile.text
         data.payload = container
 
-        String json = new PassageExtractor().execute(data.asJson())
+        String json = new WindowExtractorService().execute(data.asJson())
         println json
 
     }

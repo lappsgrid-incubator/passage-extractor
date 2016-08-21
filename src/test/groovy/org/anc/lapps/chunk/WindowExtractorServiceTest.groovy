@@ -15,7 +15,7 @@ import static org.junit.Assert.*
 /**
  * @author Keith Suderman
  */
-class PassageExtractorTest {
+class WindowExtractorServiceTest {
     static final String S1 = "Barak Obama is the 44th president of the United States."
     static final String S2 = "London is the capital city of England."
     static final String S3 = "Queen Elizabeth is the monarch of England."
@@ -26,7 +26,7 @@ class PassageExtractorTest {
 
     @Before
     void setup() {
-        service = new PassageExtractor()
+        service = new WindowExtractorService()
     }
 
     @After
@@ -40,7 +40,7 @@ class PassageExtractorTest {
         assertNotNull metadata
         assertEquals(Uri.ANY, metadata.allow)
         assertEquals(Uri.APACHE2, metadata.license)
-        assertEquals(PassageExtractor.class.name, metadata.name)
+        assertEquals(WindowExtractorService.class.name, metadata.name)
         assertEquals(Version.getVersion(), metadata.version)
         assertEquals("http://www.anc.org", metadata.vendor)
         assertEquals(UTF8, metadata.requires.encoding)
@@ -57,7 +57,7 @@ class PassageExtractorTest {
         assertNotNull json
         Data data = Serializer.parse(json, Data)
         hasError(data)
-        assertEquals(PassageExtractor.NO_INPUT, data.payload.toString())
+        assertEquals(WindowExtractorService.NO_INPUT, data.payload.toString())
     }
 
     @Test
@@ -83,7 +83,7 @@ class PassageExtractorTest {
         Data data = new Data(Uri.TEXT, 'hello world')
         data = execute(data)
         hasError(data)
-        assertTrue(data.payload.toString().startsWith(PassageExtractor.INVALID_DISCRIMINATOR))
+        assertTrue(data.payload.toString().startsWith(WindowExtractorService.INVALID_DISCRIMINATOR))
     }
 
     @Test
@@ -91,7 +91,7 @@ class PassageExtractorTest {
         Data data = new Data(Uri.LIF, null)
         data = execute(data)
         hasError(data)
-        assertEquals(PassageExtractor.NO_PARAMETERS, data.payload.toString())
+        assertEquals(WindowExtractorService.NO_PARAMETERS, data.payload.toString())
     }
 
     @Test
@@ -100,7 +100,7 @@ class PassageExtractorTest {
         data.parameters = [:]
         data = execute(data)
         hasError(data)
-        assertEquals(PassageExtractor.NO_PASSAGE_ANNOTAION, data.payload.toString())
+        assertEquals(WindowExtractorService.NO_PASSAGE_ANNOTAION, data.payload.toString())
     }
 
     @Test
@@ -109,7 +109,7 @@ class PassageExtractorTest {
         data.parameters = [ annotation: Uri.TOKEN ]
         data = execute(data)
         hasError(data)
-        assertEquals(PassageExtractor.NO_KEYWORD_PARAMETER, data.payload.toString())
+        assertEquals(WindowExtractorService.NO_KEYWORD_PARAMETER, data.payload.toString())
     }
 
     @Test
@@ -156,14 +156,14 @@ class PassageExtractorTest {
         }
         println data.asPrettyJson()
         container = new Container(data.payload)
-        List<View> views = container.findViewsThatContain(PassageExtractor.WINDOW)
+        List<View> views = container.findViewsThatContain(WindowExtractorService.WINDOW)
         assertNotNull(views)
         assertEquals(1, views.size())
         List<Annotation> annotations = views[-1].annotations
         assertNotNull(annotations)
         assertEquals(1, annotations.size())
         Annotation annotation = annotations[0]
-        assertEquals(PassageExtractor.WINDOW, annotation.atType)
+        assertEquals(WindowExtractorService.WINDOW, annotation.atType)
         String text = container.text.substring((int)annotation.start, (int)annotation.end)
         assertEquals(S1, text)
 
@@ -175,7 +175,7 @@ class PassageExtractorTest {
 //        data = Serializer.parse(json, Data)
 //
         container = new Container(data.payload)
-        views = container.findViewsThatContain(PassageExtractor.WINDOW)
+        views = container.findViewsThatContain(WindowExtractorService.WINDOW)
         assertEquals(1, views.size())
         annotations = views[0].annotations
         assertEquals(1, annotations.size())
@@ -186,7 +186,7 @@ class PassageExtractorTest {
         testFile.text = 'England\nmonarch\nElizabeth\n'
         data = execute(original)
         container = new Container(data.payload)
-        views = container.findViewsThatContain(PassageExtractor.WINDOW)
+        views = container.findViewsThatContain(WindowExtractorService.WINDOW)
         assertEquals(1, views.size())
         annotations = views[0].annotations
         assertEquals(2, annotations.size())
@@ -211,12 +211,67 @@ class PassageExtractorTest {
         }
         data = execute(original)
         container = new Container(data.payload)
-        List<View> views = container.findViewsThatContain(PassageExtractor.WINDOW)
+        List<View> views = container.findViewsThatContain(WindowExtractorService.WINDOW)
         assertEquals(1, views.size())
         List<Annotation> annotations = views[0].annotations
         assertEquals(2, annotations.size())
         assertEquals(S2, getText((Annotation)annotations[0]))
         assertEquals(S3, getText((Annotation)annotations[1]))
+        println data.asPrettyJson()
+
+    }
+
+    @Test
+    void testMatchLimitedMatch() {
+        File testFile = File.createTempFile('passage_extractor', '.txt')
+        testFile.deleteOnExit()
+        testFile.text = 'on'
+
+        Data original = makeData()
+        original.parameters = [
+                keyword: testFile.path,
+                annotation: Uri.SENTENCE,
+                numlimit: 1,
+                matchlimit: 1
+        ]
+        Data data = execute(original)
+        if (Uri.LIF != data.discriminator) {
+            fail data.payload
+        }
+        data = execute(original)
+        container = new Container(data.payload)
+        List<View> views = container.findViewsThatContain(WindowExtractorService.WINDOW)
+        assertEquals(1, views.size())
+        Annotation annotation = views[0].annotations[0]
+        assertEquals(1, annotation.getFeature("matches").size())
+        println data.asPrettyJson()
+
+    }
+
+    @Test
+    void testNumLimitedMatch() {
+        File testFile = File.createTempFile('passage_extractor', '.txt')
+        testFile.deleteOnExit()
+        testFile.text = 'England\nmonarch\nElizabeth\n'
+
+        Data original = makeData()
+        original.parameters = [
+                keyword: testFile.path,
+                annotation: Uri.SENTENCE,
+                numlimit: 1,
+                matchlimit: 1
+        ]
+        Data data = execute(original)
+        if (Uri.LIF != data.discriminator) {
+            fail data.payload
+        }
+        data = execute(original)
+        container = new Container(data.payload)
+        List<View> views = container.findViewsThatContain(WindowExtractorService.WINDOW)
+        assertEquals(1, views.size())
+        List<Annotation> annotations = views[0].annotations
+        assertEquals(1, annotations.size())
+        assertEquals(S2, getText((Annotation)annotations[0]))
         println data.asPrettyJson()
 
     }

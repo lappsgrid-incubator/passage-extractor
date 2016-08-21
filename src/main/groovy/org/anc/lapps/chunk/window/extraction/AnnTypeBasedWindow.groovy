@@ -51,7 +51,7 @@ class AnnTypeBasedWindow extends AbstractWindowExtraction {
                 if (extraction.totalContains() > 0) {
                     extracted.add(extraction)
                 }
-                if (extracted.size() > numLimit) {
+                if (extracted.size() >= numLimit) {
                     break
                 }
             }

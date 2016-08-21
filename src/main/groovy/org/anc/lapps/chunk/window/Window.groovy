@@ -1,12 +1,11 @@
 package org.anc.lapps.chunk.window
 
 import org.lappsgrid.serialization.lif.Annotation
-import org.lappsgrid.serialization.lif.View
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-import static org.anc.lapps.chunk.PassageExtractor.WINDOW
+import static org.anc.lapps.chunk.WindowExtractorService.WINDOW
 
 /**
  * Created by krim on 8/16/2016.
