@@ -16,9 +16,12 @@ class AnnTypeBasedWindow extends AbstractWindowExtraction {
 
     AnnTypeBasedWindow(Map params) {
         super(params)
-        sizeLimit = params.sizelimit ?: Double.POSITIVE_INFINITY
-        numLimit = params.numlimit ?: Double.POSITIVE_INFINITY
-        matchLimit =  params.matchlimit ?: Double.POSITIVE_INFINITY
+        sizeLimit = params.sizelimit == 0 ?
+                Double.POSITIVE_INFINITY : params.sizelimit
+        numLimit = params.numlimit == 0 ?
+                Double.POSITIVE_INFINITY : params.numlimit
+        matchLimit = params.matchlimit == 0 ?
+                Double.POSITIVE_INFINITY : params.matchlimit
 
     }
 

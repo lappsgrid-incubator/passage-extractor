@@ -107,8 +107,11 @@ class Window {
     }
 
     Annotation toAnnotation(String id) {
-        Annotation window = new Annotation(id, start, end)
-        window.atType = WINDOW
+        Annotation window = new Annotation()
+        window.id = id
+        window.setAtType(WINDOW)
+        window.setStart(start)
+        window.setEnd(end)
         window.features.matches = this.passages
         window.features.text = this.text
         window.features.id = this.originalAnnotationId
