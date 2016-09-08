@@ -1,6 +1,8 @@
 package org.anc.lapps.chunk
 
-import org.junit.*
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import org.lappsgrid.api.WebService
 import org.lappsgrid.metadata.ServiceMetadata
 import org.lappsgrid.serialization.Data
@@ -9,8 +11,8 @@ import org.lappsgrid.serialization.lif.Annotation
 import org.lappsgrid.serialization.lif.Container
 import org.lappsgrid.serialization.lif.View
 
-import static org.lappsgrid.discriminator.Discriminators.Uri
 import static org.junit.Assert.*
+import static org.lappsgrid.discriminator.Discriminators.Uri
 
 /**
  * @author Keith Suderman
@@ -242,8 +244,9 @@ class WindowExtractorServiceTest {
         container = new Container(data.payload)
         List<View> views = container.findViewsThatContain(WindowExtractorService.WINDOW)
         assertEquals(1, views.size())
-        Annotation annotation = views[0].annotations[0]
-        assertEquals(1, annotation.getFeature("matches").size())
+        Annotation annotation = views[0].annotations
+        assertEquals(S2.length(), annotation.getFeature("text").length())
+
         println data.asPrettyJson()
 
     }

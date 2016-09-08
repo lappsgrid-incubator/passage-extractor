@@ -1,13 +1,12 @@
 package org.anc.lapps.chunk
 
+import org.anc.lapps.chunk.scorer.CompositeScorer
 import org.anc.lapps.chunk.window.Window
-import org.anc.lapps.chunk.window.extraction.AbstractWindowExtraction
-import org.anc.lapps.chunk.window.extraction.AnnTypeBasedWindow
-import org.lappsgrid.discriminator.Discriminators
 import org.lappsgrid.metadata.ServiceMetadata
 import org.lappsgrid.metadata.ServiceMetadataBuilder
 import org.lappsgrid.serialization.Data
 import org.lappsgrid.serialization.Serializer
+import org.lappsgrid.serialization.lif.Annotation
 import org.lappsgrid.serialization.lif.Container
 import org.lappsgrid.serialization.lif.View
 
@@ -16,7 +15,7 @@ import static org.lappsgrid.discriminator.Discriminators.Uri
 /**
  * @author Keith Suderman
  */
-class WindowExtractorService extends AbstractWindowService {
+class WindowScorerService extends AbstractWindowService {
 
     String metadata
 
@@ -51,45 +50,51 @@ class WindowExtractorService extends AbstractWindowService {
         if (paramsValidation != null && paramsValidation.discriminator == Uri.ERROR) {
             return paramsValidation.asPrettyJson()
         }
-
-        File keytermFile = new File((String) params.keyword)
-        if (!keytermFile.exists()) {
-            return error(NO_KEYWORD_FILE).asPrettyJson()
+        CompositeScorer scorer
+        if (params.containsKey("scorers")) {
+            scorer = new CompositeScorer((String) params.scorers)
+        } else {
+            scorer = new CompositeScorer()
+            scorer.useDefaultScorers()
         }
 
-        List<String> keyterms = readKeyterms(keytermFile)
         Container container = new Container(data.payload)
+        List<View> views = container.findViewsThatContain(WINDOW)
 
-        AbstractWindowExtraction extractor = new AnnTypeBasedWindow(params)
-        List<Window> candidateWindows = extractor.extract(container, keyterms)
+        View view = views[-1]
+        List<Annotation> annotations = view.annotations
+        View scores = container.newView()
+        scores.addContains(SCORES, WindowScorerService.class.name, SCORES)
 
-        if (candidateWindows == null || candidateWindows.size() == 0) {
-            Container result = new Container()
-            result.text = container.text
-            result.metadata = container.metadata
-            View view = result.newView()
-            String annotationType = params.annotation
-            view.addContains(annotationType, WindowExtractorService.class.name, annotationType)
-            return new Data(Discriminators.Uri.LIF, result).asJson()
-        }
-
-        View resultView = container.newView()
-        resultView.addContains(WINDOW, WindowExtractorService.class.name, WINDOW)
-        resultView.metadata.keyterms = keyterms
-        resultView.metadata.sizelimit = params.sizelimit ?: "unlimited"
-        resultView.metadata.numlimit = params.numlimit ?: "unlimited"
-        resultView.metadata.matchlimit = params.matchlimit ?: "unlimited"
+        List<String> keyterms = view.metadata.keyterms ?: []
+        int matchLimit = (int) view.metadata.matchlimit ?: Double.POSITIVE_INFINITY
+        Window document = new Window(0, container.text.length(), container.text, "document", keyterms, matchLimit)
 
         int id = 0
-        candidateWindows.each { Window window ->
-            resultView.addAnnotation(window.toAnnotation("window-${++id}"))
+        Best best = new Best()
+
+        annotations.each { Annotation a ->
+            Window window = new Window((int) a.start, (int) a.end, a.features.text, a.features.id, keyterms, matchLimit)
+            Annotation scoreA = scores.newAnnotation("score-${++id}", "Score", a.start, a.end)
+            double score = scorer.scoreWindow(window, document)
+            scoreA.features.score = score
+            scoreA.features.window = a.id
+            if (score > best.score) {
+                best.score = score
+                best.start = a.start
+                best.end = a.end
+                best.window = a.id
+            }
         }
 
-        return new Data(Uri.LIF, container).asPrettyJson()
-    }
+        //container.views[-1].metadata.scores = scores
+        View bestView = container.newView()
+        bestView.addContains(BEST, WindowScorerService.class.name, BEST)
+        Annotation bestA = bestView.newAnnotation('best-0', BEST, best.start, best.end)
+        bestA.features.window = best.window
+        bestA.features.score = best.score
 
-    List<String> readKeyterms(File keytermFile) {
-        return keytermFile.readLines()
+        return new Data(Uri.LIF, container).asPrettyJson()
     }
 
     /**
@@ -108,9 +113,9 @@ class WindowExtractorService extends AbstractWindowService {
                     .allow(Uri.ANY)
                     .license(Uri.APACHE2)
                     .vendor("http://www.anc.org")
-                    .name(WindowExtractorService.class.name)
+                    .name(WindowScorerService.class.name)
                     .version(Version.getVersion())
-                    .description('Extracts all segments (chunks) that contain the given string(s).')
+                    .description('Scores relevance of segments pulled by WindowExtractorService')
                     .requireEncoding('UTF-8')
                     .requireFormat(Uri.LIF)
                     .produceEncoding('UTF-8')
@@ -120,4 +125,11 @@ class WindowExtractorService extends AbstractWindowService {
         }
         return metadata
     }
+       class Best {
+            double score = -1
+            long start = 0
+            long end = 0
+            String window
+        }
+
 }
