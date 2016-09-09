@@ -1,9 +1,5 @@
-package org.anc.lapps.chunk.scoring
+package org.anc.lapps.chunk.scorer
 
-import org.anc.lapps.chunk.scorer.BrevityScorer
-import org.anc.lapps.chunk.scorer.MatchRecallScorer
-import org.anc.lapps.chunk.scorer.OffsetScorer
-import org.anc.lapps.chunk.scorer.WindowScorerI
 import org.anc.lapps.chunk.window.Window
 import org.junit.Test
 import org.lappsgrid.serialization.Data

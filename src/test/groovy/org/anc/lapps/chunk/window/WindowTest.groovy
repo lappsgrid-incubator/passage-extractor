@@ -16,8 +16,8 @@ public class WindowTest {
 
     @Before
     void setUp() throws Exception {
-        window = new Window(10, 19, 'ab' * 5)
-        document = new Window(0, 99, 'a' * 100)
+        window = new Window(10, 19, 'ab' * 5, 'oid')
+        document = new Window(0, 99, 'a' * 100, 'odoc')
     }
 
     @After
@@ -51,14 +51,14 @@ public class WindowTest {
 
     @Test
     public void totalMatches() throws Exception {
-        window = new Window(10, 19, 'ab' * 5, ['a', 'b'])
+        window = new Window(10, 19, 'ab' * 5, 'oid', ['a', 'b'])
         assertEquals(10, window.totalMatches())
 
     }
 
     @Test
     public void totalContains() throws Exception {
-        window = new Window(10, 19, 'ab' * 5, ['a', 'b'])
+        window = new Window(10, 19, 'ab' * 5, 'oid', ['a', 'b'])
         assertEquals(2, window.totalContains())
     }
 

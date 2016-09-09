@@ -22,6 +22,7 @@ class CompositeScorerTest {
         println scorer.toString()
     }
 
+    @Ignore
     @Test
     void canManuallyAddScorers() {
         WindowScorerI brevity = { window, document -> return 0.5d }
