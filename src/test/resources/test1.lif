@@ -1,0 +1,83 @@
+{
+  "discriminator" : "http://vocab.lappsgrid.org/ns/media/jsonld#lif",
+  "payload" : {
+    "@context" : "http://vocab.lappsgrid.org/context-1.0.0.jsonld",
+    "metadata" : { },
+    "text" : {
+      "@value" : "Barak Obama is the 44th president of the United States.\nLondon is the capital city of England.\nQueen Elizabeth is the monarch of England.\n"
+    },
+    "views" : [ {
+      "metadata" : {
+        "contains" : {
+          "http://vocab.lappsgrid.org/Sentence" : {
+            "producer" : "PassageExtractor Test Case",
+            "type" : "sentence"
+          }
+        }
+      },
+      "annotations" : [ {
+        "id" : "s1",
+        "start" : 0,
+        "end" : 55,
+        "@type" : "http://vocab.lappsgrid.org/Sentence"
+      }, {
+        "id" : "s2",
+        "start" : 56,
+        "end" : 94,
+        "@type" : "http://vocab.lappsgrid.org/Sentence"
+      }, {
+        "id" : "s3",
+        "start" : 95,
+        "end" : 137,
+        "@type" : "http://vocab.lappsgrid.org/Sentence"
+      } ]
+    }, {
+      "metadata" : {
+        "contains" : {
+          "Window" : {
+            "producer" : "org.anc.lapps.chunk.PassageExtractor",
+            "type" : "Window"
+          }
+        },
+        "keyterms" : [ "England", "monarch", "Elizabeth" ]
+      },
+      "annotations" : [ {
+        "id" : "window-1",
+        "start" : 56,
+        "end" : 94,
+        "@type" : "Window",
+        "features" : {
+          "matches" : [ {
+            "term" : "England",
+            "start" : 30,
+            "end" : 37
+          } ],
+          "text" : "London is the capital city of England.",
+          "id" : "s2"
+        }
+      }, {
+        "id" : "window-2",
+        "start" : 95,
+        "end" : 137,
+        "@type" : "Window",
+        "features" : {
+          "matches" : [ {
+            "term" : "England",
+            "start" : 34,
+            "end" : 41
+          }, {
+            "term" : "monarch",
+            "start" : 23,
+            "end" : 30
+          }, {
+            "term" : "Elizabeth",
+            "start" : 6,
+            "end" : 15
+          } ],
+          "text" : "Queen Elizabeth is the monarch of England.",
+          "id" : "s3"
+        }
+      } ]
+    } ]
+  }
+}

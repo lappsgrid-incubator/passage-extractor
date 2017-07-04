@@ -5,3 +5,4 @@ target
 .idea
 VERSION
 src/main/**/Version.java
+.DS_Store
